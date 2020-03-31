@@ -76,9 +76,9 @@ remote_hosts='https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts'
 ip='0.0.0.0'
 
 # Overwrite the defaults with a config file, if it exists.
-if [ -e $CONFIG_FILE ]; then
+if [ -e ${CONFIG_FILE} ]; then
   # shellcheck disable=SC1090
-  . $CONFIG_FILE
+  . ${CONFIG_FILE}
 fi
 
 # msg_check: show message when successfully done
@@ -106,7 +106,7 @@ msg_info() {
 }
 
 root_check() {
-  if [ $UID -ne 0 ]; then
+  if [ ${UID} -ne 0 ]; then
     msg_error "please run as root."
     exit
   fi
@@ -171,13 +171,13 @@ _hosts_enable() {
   hosts_init
   local message="enabled"
   # Remove the host from the disabled hosts file.
-  if grep -q "^$ip $1$" "${DISABLED_HOSTS}"; then
-    sed -i "/^$ip $1$/d" "${DISABLED_HOSTS}"
+  if grep -q "^${ip} $1$" "${DISABLED_HOSTS}"; then
+    sed -i "/^${ip} $1$/d" "${DISABLED_HOSTS}"
   fi
   # If the host is already in the enabled hosts file, inform the user.
   # Otherwise enable it.
   if grep -q "$1" "${ENABLED_HOSTS}"; then
-    message="already $message"
+    message="already ${message}"
   else
     echo "$1" >> "${ENABLED_HOSTS}"
   fi
@@ -196,10 +196,10 @@ _hosts_disable() {
   fi
   # If the host is already in the disabled hosts file, inform the user.
   # Otherwise disable it.
-  if grep -q "$ip $1" "${DISABLED_HOSTS}"; then
-    message="already $message"
+  if grep -q "${ip} $1" "${DISABLED_HOSTS}"; then
+    message="already ${message}"
   else
-    echo "$ip $1" >> "${DISABLED_HOSTS}"
+    echo "${ip} $1" >> "${DISABLED_HOSTS}"
   fi
 
   hosts_merge
@@ -208,13 +208,13 @@ _hosts_disable() {
 
 hosts_enable() {
   for host in "$@"; do
-    _hosts_enable "$host"
+    _hosts_enable "${host}"
   done
 }
 
 hosts_disable() {
   for host in "$@"; do
-    _hosts_disable "$host"
+    _hosts_disable "${host}"
   done
 }
 
@@ -226,13 +226,13 @@ hosts_list() {
   # Enabled hosts are defined only in the enabled file, so we can just list
   # those entries.
   if [ "$1" = "enabled" ]; then
-    match_color=$green
+    match_color=${green}
     hosts=$(grep -v '^#' "${ENABLED_HOSTS}")
   # A complete list of disabled hosts should be built from the compiled hosts
   # file.
   elif [ "$1" = "disabled" ]; then
-    match_color=$red
-    match_string="$(echo $ip | awk '{print substr($0,1,3)}')"
+    match_color=${red}
+    match_string="$(echo ${ip} | awk '{print substr($0,1,3)}')"
     hosts=$(awk "{ if ( substr(\$0, 1, 3) == \"${match_string}\" ) printf(\"%s\n\", \$2) }" ${HOSTS})
   fi
   for host in ${hosts}; do
@@ -244,7 +244,7 @@ hosts_list() {
 
 # hosts_fetch_updates: update the remote hosts file
 hosts_fetch_updates() {
-  if [ -z $remote_hosts ]; then
+  if [ -z ${remote_hosts} ]; then
     msg_error "no remote hosts URL defined"
     exit 1
   fi
@@ -260,22 +260,22 @@ hosts_fetch_updates() {
 
   # Only allow entries in the new remote file which begin with the blocking IP
   # address.
-  match_string="$(echo $ip | awk '{print substr($0,1,3)}')"
-  hosts=$(awk "{ if ( substr(\$0, 1, 3) == \"$match_string\" ) print \$0 >> \"${tmpfile0}\" }" "${tmpfile}")
+  match_string="$(echo ${ip} | awk '{print substr($0,1,3)}')"
+  hosts=$(awk "{ if ( substr(\$0, 1, 3) == \"${match_string}\" ) print \$0 >> \"${tmpfile0}\" }" "${tmpfile}")
 
   # If a previous remote hosts files exists, count the number of different
   # lines between the old and new files.
   if [ -f ${REMOTE_HOSTS} ]; then
-    n=$(diff -U 0 "${REMOTE_HOSTS}" "${tmpfile0}" | grep -v ^@ | tail -n +3 | wc -l)
+    n=$(diff -U 0 "${REMOTE_HOSTS}" "${tmpfile0}" | grep -v ^@ | tail -n +3 | wc -l) || true
   else
-    n=$(wc -l "${tmpfile0}" | cut -d' ' -f1)
+    n=$(wc -l "${tmpfile0}" | cut -d' ' -f1) || true
   fi
 
   mv "${tmpfile0}" "${REMOTE_HOSTS}"
-  msg_check "update: ${purple}$n${reset} modified entries"
+  msg_check "update: ${purple}${n}${reset} modified entries"
 }
 
-# hosts_update: update the remote hosts and export to $HOSTS
+# hosts_update: update the remote hosts and export to ${HOSTS}
 hosts_update() {
   root_check
   hosts_init
@@ -290,7 +290,7 @@ hosts_restore() {
   grep --fixed-strings --line-regexp --invert-match \
     -f ${REMOTE_HOSTS} \
     -f ${DISABLED_HOSTS} \
-    ${HOSTS} > ${USER_HOSTS}
+    ${HOSTS} > ${USER_HOSTS} || true
 
   cp ${USER_HOSTS} ${HOSTS}
   msg_check "${HOSTS} has been restored."
@@ -352,10 +352,7 @@ case $1 in
   restore)
     hosts_restore
     ;;
-  --help)
-    hosts_usage
-    ;;
-  *)
+  --help | *)
     hosts_usage
     ;;
 esac
