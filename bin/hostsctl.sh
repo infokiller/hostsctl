@@ -18,9 +18,17 @@
 # See https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -o errexit -o errtrace -o nounset -o pipefail
 
+# Reset tty colors if running in a tty.
+maybe_reset_tty_colors() {
+  local mytty
+  # The `tty` command returns an error if not running in a tty.
+  mytty="$(tty)" || return
+  tput sgr0 > "${mytty}"
+}
+
 # by https://github.com/mathiasbynens/dotfiles
 if tput setaf 1 &> /dev/null; then
-  tput sgr0 # reset colors
+  maybe_reset_tty_colors
   bold=$(tput bold)
   reset=$(tput sgr0)
   # Solarized colors, taken from http://git.io/solarized-colors.
